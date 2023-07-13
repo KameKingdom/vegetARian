@@ -20,7 +20,8 @@ void setup() {
   //ウィンドウ&カメラの設定 //
   size(640, 480, P3D); // ウィンドウのサイズ
   String[] cameras = Capture.list(); // 使用可能カメラの取得
-  camera = new Capture(this, cameras[cameras.length - 1]); // カメラを設定
+  print(cameras);
+  camera = new Capture(this, cameras[0]); // カメラを設定
   camera.start(); // カメラ起動
   
   //ARの設定 //
@@ -98,6 +99,7 @@ void draw() {
           popMatrix();
         }
         else{
+          cards[i].move();
           pushMatrix();
           translate(0, 0, cards[i].height);
           scale(cards[i].scale);
@@ -105,7 +107,6 @@ void draw() {
           rotateY(cards[i].angle);
           shape(cards[i].shape);
           popMatrix();
-          
         }
         fill(255); // 初期化
         markers[i].endTransform(); // マーカー中心を原点に設定
