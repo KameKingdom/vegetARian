@@ -1,0 +1,23 @@
+{
+    "version": "2.0.0",
+    "tasks": [
+      {
+        "label": "Run",
+        "command": "C:/Users/yudai/Desktop/Application/Processing/processing-4.2/processing-java.exe",
+        "type": "process",
+        "args": [
+          "--force",
+          "--sketch=${workspaceFolder}\\${relativeFileDirname}",
+          "--run"
+        ],
+        "group": {
+          "kind": "build",
+          "isDefault": true
+        },
+        "presentation": {
+          "reveal": "always",
+          "panel": "new"
+        }
+      }
+    ]
+}
