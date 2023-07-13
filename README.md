@@ -1,4 +1,4 @@
-# beastARia
+# vegetARian
 
 [ARマーカーを用いて現実空間でカードゲーム]
 
