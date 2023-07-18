@@ -44,9 +44,10 @@ void setup() {
 class Character {
   PShape shape;
   String name;
-  int HP;
-  int ATK;
-  float scale;
+  int ARdetectedFrame = 0; // AR検出フレーム
+  int totalOccurrencesFrame = 0; // 出現総数フレーム
+  boolean isVegetableExsit = false;
+  float scale; // ARのスケール
   float angle = 0.0; // 角度
   int height = 0; // 高度
   
@@ -64,6 +65,10 @@ class Character {
     else if (filename.equals("apple.obj")) { this.name = "apple"; this.HP = 90; this.ATK = 15; this.scale = 200; this.rotate_value = 0.05;}
     else if (filename.equals("Chicken.obj")) { this.name = "Plane"; this.HP = 150; this.ATK = 30; this.scale = 0.7; this.updown_value = 1; }
     else{this.name = "unknown"; this.HP = 0; this.ATK = 0; this.scale = 0;}
+  }
+
+  boolean isVegetableExsit(){
+    
   }
   
   void move() {
