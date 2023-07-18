@@ -8,9 +8,9 @@ Capture camera; // カメラ
 MultiMarker[] markers; // マーカー
 
 Character[] cards; // キャラクターカードの配列変数
-int n_vegetable = 4; // 野菜カードの数
-int n_status = 1; // ステータスカードの数
-int n_cards = 5; // カードの総数
+int n_vegetable = 1; // 野菜カードの数
+int n_status = 0; // ステータスカードの数
+int n_cards = n_vegetable + n_status; // カードの総数
 int n_marker = n_cards; // マーカーの数
 
 int index_status = 4; // ステータスカードのインデックス
@@ -54,10 +54,6 @@ void setup() {
   //キャラクターの作成 //
   cards = new Character[n_cards];
   cards[0] = new Character("greenpepper.obj");
-  cards[1] = new Character("greenpepper.obj");
-  cards[2] = new Character("greenpepper.obj");
-  cards[3] = new Character("greenpepper.obj");
-  cards[4] = null; // ステータスカード
 }
 
 // キャラクターのクラス //
@@ -85,9 +81,6 @@ class Character {
   
   void setParameter(String filename){
     if(filename.equals("greenpepper.obj")){ this.name = "GreenPepper"; this.scale = 0.2; this.rotate_value = 0.05;}
-    else if(filename.equals("apple.obj")){ this.name = "apple"; this.scale = 200; this.rotate_value = 0.05;}
-    else if(filename.equals("Chicken.obj")){ this.name = "Plane"; this.scale = 0.7; this.updown_value = 1; }
-    else{this.name = "unknown"; this.scale = 0;}
   }
 
   void selfBehavior(int countDetectedFrame){
