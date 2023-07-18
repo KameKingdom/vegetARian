@@ -35,8 +35,8 @@ void setup() {
   camera.start(); // カメラ起動
   
   //ARの設定 //
-  markers = new MultiMarker[n_marker];
-  for (int i = 0; i < n_marker; i++) {
+  markers = new MultiMarker[n_cards];
+  for (int i = 0; i < n_cards; i++) {
       markers[i] = new MultiMarker(this, width, height, "camera_para.dat", NyAR4PsgConfig.CONFIG_PSG);
       markers[i].addNyIdMarker(i, 80); // マーカ登録(ID, マーカの幅)
   }
@@ -62,7 +62,7 @@ class Character {
   String name;
   int detectedFrame = 0; // AR検出フレーム
   int totalFrame = 0; // 出現総数フレーム
-  int maxFrame = 500; // 出現総数フレーム
+  int maxFrame = 50; // 出現総数フレーム
   float scale; // ARのスケール
   float angle = 0.0; // 角度
   int height = 0; // 高度
@@ -83,33 +83,31 @@ class Character {
     if(filename.equals("greenpepper.obj")){ this.name = "GreenPepper"; this.scale = 0.2; this.rotate_value = 0.05;}
   }
 
-  void selfBehavior(int countDetectedFrame){
-    /* 自分が存在しない時 */
-    if(this.isVegetableExsit == false){
-      int probability = int(random(100));
-      if(probability == 0){
-        this.isVegetableExsit = true;
-        this.totalFrame = 0;
-        this.detectedFrame = 0;
-        this.isHidden = false;
-      }
+  void update(){
+    /* キャラクター生成 */
+    if(!this.isVegetableExsit && random(1) <= 0.01){
+      print("generate vegetable");
+      this.isVegetableExsit = true;
+      this.totalFrame = 0;
+      this.detectedFrame = 0;
+      this.isHidden = false;
     }
     /* 自分が存在する時 */
-    else{
+    if(this.isVegetableExsit){
       this.totalFrame += 1;
-      this.detectedFrame += countDetectedFrame;
       /* 存在時間終了 */
       if(this.totalFrame > this.maxFrame){
-        this.isVegetableExsit = false;
-        float probability = this.detectedFrame / this.totalFrame;
-        if(probability < 0.4){
-          isHidden = false;
-        }else if(probability < 0.7){
+        float probability = (float)this.detectedFrame / this.totalFrame;
+        print(" probability: " + probability);
+        if(0.4 < probability && probability < 0.7){
           isHidden = true;
         }else{
           isHidden = false;
         }
-        print("isHidden: " + isHidden);
+        print(" isHidden: " + isHidden + "\n");
+        this.isVegetableExsit = false;
+        this.totalFrame = 0;
+        this.detectedFrame = 0;
       }
     }
   }
@@ -176,23 +174,11 @@ void draw() {
       for (int i = 0; i < n_marker; i++) {
         markers[i].detect(camera);
         markers[i].drawBackground(camera);
-        
+
         if (markers[i].isExist(0)) {
           markers[i].beginTransform(0); // マーカー中心を原点に設定
-          cards[i].selfBehavior(1); // カードが存在したとき
-          // ステータス確認マーカーが認識されたら、ステータスを表示します。
-          if (i == index_status) {
-            int textSize = 30;
-            pushMatrix();
-            translate(-textSize/2, 0, 150);
-            textMode(SHAPE);
-            textSize(textSize);
-            rotateX(- PI / 2);
-            fill(255);
-            text("test", 0, 0); 
-            popMatrix();
-          }
-          else{
+          cards[i].detectedFrame += 1;
+          if(cards[i].isVegetableExsit == true){
             cards[i].move();
             pushMatrix();
             translate(0, 0, cards[i].height);
@@ -201,10 +187,11 @@ void draw() {
             rotateY(cards[i].angle);
             shape(cards[i].shape);
             popMatrix();
+            fill(255); // 初期化
           }
-          fill(255); // 初期化
           markers[i].endTransform(); // マーカー中心を原点に設定
         }
+        cards[i].update();
       }
     }
   }
