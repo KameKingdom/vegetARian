@@ -83,8 +83,11 @@ class Character {
     setParameter(filename);
   }
   
-  void setParameter(String filename) {
-    if (filename.equals("apple.obj")) { this.name = "apple"; }
+  void setParameter(String filename){
+    if(filename.equals("greenpepper.obj")){ this.name = "GreenPepper"; this.HP = 100; this.ATK = 10; this.scale = 0.2; this.rotate_value = 0.05;}
+    else if(filename.equals("apple.obj")){ this.name = "apple"; this.HP = 90; this.ATK = 15; this.scale = 200; this.rotate_value = 0.05;}
+    else if(filename.equals("Chicken.obj")){ this.name = "Plane"; this.HP = 150; this.ATK = 30; this.scale = 0.7; this.updown_value = 1; }
+    else{this.name = "unknown"; this.HP = 0; this.ATK = 0; this.scale = 0;}
   }
 
   void selfBehavior(int countDetectedFrame){
