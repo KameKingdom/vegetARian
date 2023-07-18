@@ -8,7 +8,7 @@ Capture camera; // カメラ
 MultiMarker[] markers; // マーカー
 
 Character[] cards; // キャラクターカードの配列変数
-int n_vegetable = 1; // 野菜カードの数
+int n_vegetable = 3; // 野菜カードの数
 int n_status = 0; // ステータスカードの数
 int n_cards = n_vegetable + n_status; // カードの総数
 int n_marker = n_cards; // マーカーの数
@@ -54,6 +54,8 @@ void setup() {
   //キャラクターの作成 //
   cards = new Character[n_cards];
   cards[0] = new Character("greenpepper.obj");
+  cards[1] = new Character("greenpepper.obj");
+  cards[2] = new Character("greenpepper.obj");
 }
 
 // キャラクターのクラス //
@@ -86,7 +88,6 @@ class Character {
   void update(){
     /* キャラクター生成 */
     if(!this.isVegetableExsit && random(1) <= 0.01){
-      print("generate vegetable");
       this.isVegetableExsit = true;
       this.totalFrame = 0;
       this.detectedFrame = 0;
@@ -98,13 +99,11 @@ class Character {
       /* 存在時間終了 */
       if(this.totalFrame > this.maxFrame){
         float probability = (float)this.detectedFrame / this.totalFrame;
-        print(" probability: " + probability);
         if(0.4 < probability && probability < 0.7){
           isHidden = true;
         }else{
           isHidden = false;
         }
-        print(" isHidden: " + isHidden + "\n");
         this.isVegetableExsit = false;
         this.totalFrame = 0;
         this.detectedFrame = 0;
@@ -192,6 +191,7 @@ void draw() {
           markers[i].endTransform(); // マーカー中心を原点に設定
         }
         cards[i].update();
+        print(i + ": " + cards[i].isVegetableExsit + "\n");
       }
     }
   }
