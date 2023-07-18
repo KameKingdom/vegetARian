@@ -6,6 +6,7 @@ import processing.sound.*;
 // 変数の宣言 //
 Capture camera; // カメラ
 MultiMarker[] markers; // マーカー
+int fps = 60; // 60fps
 
 Character[] cards; // キャラクターカードの配列変数
 int n_vegetable = 3; // 野菜カードの数
@@ -24,6 +25,7 @@ boolean isChangedMusic = true; // 音源変更時フラグ
 SoundFile BGMopening; // Opening
 SoundFile BGMinstruction; // Instruction
 SoundFile BGMharvest; // Harvest
+SoundFile BGMget; // Get
 
 // 初期設定 //
 void setup() {
@@ -33,6 +35,7 @@ void setup() {
   print(cameras);
   camera = new Capture(this, cameras[0]); // カメラを設定
   camera.start(); // カメラ起動
+  frameRate(fps); // 60fps
   
   //ARの設定 //
   markers = new MultiMarker[n_cards];
@@ -50,11 +53,12 @@ void setup() {
   BGMopening = new SoundFile(this, "sound/opening.wav");
   BGMinstruction = new SoundFile(this, "sound/instruction.wav");
   BGMharvest = new SoundFile(this, "sound/bgm.wav");
+  BGMget = new SoundFile(this, "sound/get.wav");
 
   //キャラクターの作成 //
   cards = new Character[n_cards];
   cards[0] = new Character("greenpepper.obj");
-  cards[1] = new Character("greenpepper.obj");
+  cards[1] = new Character("apple.obj");
   cards[2] = new Character("greenpepper.obj");
 }
 
@@ -64,7 +68,7 @@ class Character {
   String name;
   int detectedFrame = 0; // AR検出フレーム
   int totalFrame = 0; // 出現総数フレーム
-  int maxFrame = 50; // 出現総数フレーム
+  int maxFrame = fps * 3; // 出現総数フレーム
   float scale; // ARのスケール
   float angle = 0.0; // 角度
   int height = 0; // 高度
@@ -83,6 +87,7 @@ class Character {
   
   void setParameter(String filename){
     if(filename.equals("greenpepper.obj")){ this.name = "GreenPepper"; this.scale = 0.2; this.rotate_value = 0.05;}
+    else if(filename.equals("apple.obj")){ this.name = "Apple"; this.scale = 200; this.rotate_value = 0.05;}
   }
 
   void update(){
@@ -101,6 +106,7 @@ class Character {
         float probability = (float)this.detectedFrame / this.totalFrame;
         if(0.4 < probability && probability < 0.7){
           isHidden = true;
+          BGMget.play();
         }else{
           isHidden = false;
         }
