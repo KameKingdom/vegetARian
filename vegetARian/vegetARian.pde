@@ -7,7 +7,9 @@ import processing.sound.*;
 Capture camera; // カメラ
 MultiMarker[] markers; // マーカー
 String[] vegetableFiles = {"greenpepper", "apple", "eggplant", "caterpie"}; // 材料のファイル名
-String[] bulletFiles = {"UP", "DOWN"}; // 弾丸のファイル名
+String[] bulletFiles = {"PAN", "POT", "KNIFE", "MICROWAVE"}; // 弾丸のファイル名
+char[] keys = {'a', 'b', 'c', 'd', 'e', 'f', 'g', 'h', 'i', 'j', 'k', 'l', 'm', 'n', 'o', 'p', 'q', 'r', 's', 't', 'u', 'v', 'w', 'x', 'y', 'z'};
+
 int fps = 60; // 60fps
 int frameCounter = 0; // 汎用的なフレームカウンタ
 
@@ -29,6 +31,7 @@ int elapsedCount = 0; //
 Bullet[] bullets; // 弾丸
 int n_bullets = 5;
 int n_kind_bullets = bulletFiles.length;
+int n_keys = keys.length;
 
 float vegetableGenerationProbability = 0.05;
 float bulletGenerationProbability = 0.1;
@@ -40,14 +43,21 @@ int FrameLoading = 2;
 int FrameCooking = 3;
 int FrameResult = 4;
 
+int randomIndex = 0;
+
 // クッキングキーフラグ //
 boolean isAlreadyPressed = false;
 boolean upKeyPressed = false;
 boolean downKeyPressed = false;
 int point = 0;
 int cookingClearPoint = 100;
+char pressedKey = ' ';
 
 int TimeHarvest = 30;
+int TimeCooking = 20;
+
+char harvestResult = ' ';
+char cookingResult = ' ';
 
 int loadingPosition = 0;
 PImage[] ImageTitel; // 画面画像
@@ -55,9 +65,8 @@ PImage ImageSubtitle; // サブタイトル
 PImage ImageLoading;
 PImage ImageGreenPepper;
 PImage ImageApple;
-PImage ImagePan;
-PImage ImagePot;
 PImage[] ImageCooking;
+PImage ImageResult;
 
 // 音源 //
 boolean isFrameChanged = true; // 音源変更時フラグ
@@ -93,13 +102,12 @@ void setup() {
   ImageLoading = loadImage("images/nowLoading.png");
   ImageGreenPepper = loadImage("images/greenpepper.png");
   ImageApple = loadImage("images/apple.png");
-  ImagePan = loadImage("images/UP.png");
-  ImagePot = loadImage("images/DOWN.png");
   ImageCooking = new PImage[4];
   ImageCooking[0] = loadImage("images/cooking1.png");
   ImageCooking[1] = loadImage("images/cooking2.png");
   ImageCooking[2] = loadImage("images/cooking1.png");
   ImageCooking[3] = loadImage("images/cooking3.png");
+  ImageResult = loadImage("images/result.png");
 
   // 音源のインポート //
   BGMopening = new SoundFile(this, "sound/opening.wav");
@@ -129,7 +137,6 @@ void setup() {
     bullets[i] = new Bullet(bulletFiles[i % n_kind_bullets], width + 100);
   } 
 }
-
 
 // キャラクターのクラス //
 class Character {
@@ -228,6 +235,9 @@ class Bullet{
   int x;
   int y;
   int speed;
+  int selfPoint;
+  char key;
+  boolean isCountPoint = false;
   boolean isPressed = false;
   boolean isBulletExist = false;
 
@@ -237,12 +247,27 @@ class Bullet{
     this.x = x;
     this.image = loadImage(this.filename);
     this.y = height - this.image.height;
+    this.key = keys[(int)(random(0, n_keys))];
     setParameter(this.name);
   }
 
   void setParameter(String name){
-    if(name.equals("UP")){ this.speed = 3;}
-    else if(name.equals("DOWN")){ this.speed = 5;}
+    if(name.equals("PAN")){
+      this.speed = 3;
+      this.selfPoint = 2;
+    }
+    else if(name.equals("POT")){
+      this.speed = 5;
+      this.selfPoint = 3;
+    }
+    else if(name.equals("MICROWAVE")){
+      this.speed = 2;
+      this.selfPoint = 1;
+    }
+    else if(name.equals("KNIFE")){
+      this.speed = 10;
+      this.selfPoint = 5;
+    }
   }
 
   void move(){
@@ -254,16 +279,16 @@ class Bullet{
   void update(){
     if(this.isBulletExist){
       image(this.image, (float)this.x, (float)this.y);
+      fill(0);
+      textSize(50);
+      text(this.key, this.x + this.image.width / 2, this.y + this.image.height / 2);
+      fill(255);
     }
-    if(this.name.equals("UP") && this.x < 100 && upKeyPressed == true){
-      point++;
+    if(this.key == pressedKey && this.x < this.image.width && !this.isCountPoint){
+      point += this.selfPoint;
+      BGMget.play();
       this.isBulletExist = false;
-      upKeyPressed = false;
-    }
-    else if(this.name.equals("DOWN") && this.x < 100 && downKeyPressed == true){
-      point++;
-      this.isBulletExist = false;
-      downKeyPressed = false;
+      this.isCountPoint = true;
     }
     if(this.x < -this.image.width){
       this.isBulletExist = false;
@@ -304,11 +329,11 @@ void draw() {
       windowHandler++;
     }
     frameCounter++;
-    image(ImageSubtitle, 0, height - ImageSubtitle.height, width, ImageSubtitle.height);
+    image(ImageSubtitle, 0, 0, width, ImageSubtitle.height);
     String message = myIngredient.toString() + "\n" + (TimeHarvest * fps - frameCounter) / fps; // myIngredientの内容を文字列に変換
     fill(0);
     textSize(20);
-    text(message, (width - textWidth(message)) / 2, height - ImageSubtitle.height / 2);
+    text(message, (width - textWidth(message)) / 2, ImageSubtitle.height / 2);
     fill(255);
 
     // 画像処理 //
@@ -320,7 +345,7 @@ void draw() {
         markers[i].detect(camera);
         markers[i].drawBackground(camera);
         if(random(1) < vegetableGenerationProbability && !cards[i].isVegetableExsit) {
-          int randomIndex = (int) random(0, n_kind_vegetables);
+          randomIndex = (int) random(0, n_kind_vegetables);
           cards[i] = new Character(vegetableFiles[randomIndex]);
           cards[i].isVegetableExsit = true;
         }
@@ -344,7 +369,6 @@ void draw() {
       }
     }
   }
-
 
   else if(windowHandler == FrameLoading){
     // 音源変更
@@ -370,17 +394,19 @@ void draw() {
       isFrameChanged = false;
       frameCounter = 0;
     }
+    frameCounter++;
     // 描画 //
     if (elapsedCount >= 50) {
       currentImageIndex = (currentImageIndex + 1) % ImageCooking.length;
       elapsedCount = 0;
     }
-    if (point >= cookingClearPoint){
+    if (frameCounter > TimeCooking * fps){
       windowHandler++;
       isFrameChanged = true;
     }
     image(ImageCooking[currentImageIndex], 0, 0, width, height);
     fill(255);
+    text((TimeCooking * fps - frameCounter) / fps, width / 2, height / 2 + 20);
     ellipse(60, 420, 60, 60);
     rect(0, 0, width, 60);
     fill(255, 0, 0);
@@ -389,7 +415,7 @@ void draw() {
 
     for (int i = 0; i < n_bullets; i++) {
       if (!bullets[i].isBulletExist && random(1) < bulletGenerationProbability) {
-        int randomIndex = (int) random(0, n_kind_bullets);
+        randomIndex = (int) random(0, n_kind_bullets);
         bullets[i] = new Bullet(bulletFiles[randomIndex], width + 100);
         bullets[i].isBulletExist = true;
       }
@@ -398,28 +424,62 @@ void draw() {
     }
   }
 
-
   else if(windowHandler == FrameResult){
-    exit();
+    if (isFrameChanged){
+      BGMcooking.stop();
+      BGMresult.loop();
+      frameCounter = 0;
+      // 総和を計算する
+      int sum = 0, total = 0;
+      for (int i = 0; i < n_kind_vegetables; i++) {
+        int num = myIngredient.get(vegetableFiles[i]);
+        total += num;
+        if (!vegetableFiles[i].equals("caterpie")) {
+          sum += num;
+        }
+      }
+      int catapieValue = myIngredient.get("caterpie");
+      print("sum: " + sum + "total: ", total + "point: " + point + "cooking: " + cookingClearPoint);
+      int hr = (int)((double)sum / total * 100);
+      int cr = (int)((double)point / cookingClearPoint * 100);
+
+      if(hr <= 50) harvestResult = 'E';
+      else if(hr <= 60) harvestResult = 'D';
+      else if(hr <= 70) harvestResult = 'C';
+      else if(hr <= 80) harvestResult = 'B';
+      else if(hr <= 90) harvestResult = 'A';
+      else harvestResult = 'S';
+
+      if(cr <= 50) cookingResult = 'E';
+      else if(cr <= 60) cookingResult = 'D';
+      else if(cr <= 70) cookingResult = 'C';
+      else if(cr <= 80) cookingResult = 'B';
+      else if(cr <= 90) cookingResult = 'A';
+      else cookingResult = 'S';
+
+      isFrameChanged = false;
+    }
+    image(ImageResult, 0, 0, width, height);
+    textSize(50);
+    text(harvestResult, 420, 280);
+    text(cookingResult, 420, 370);
   }
 }
 
-
-void keyPressed(){
-  if(windowHandler == FrameCooking){
-    if(key == CODED){
-      if(keyCode == UP){
-        upKeyPressed = true;
-      } else if(keyCode == DOWN){
-        downKeyPressed = true;
-      }
+void keyPressed() {
+  if (windowHandler == FrameCooking) {
+    if (key >= 'a' && key <= 'z') {
+      pressedKey = key;
+    } else {
+      pressedKey = ' ';
     }
   }
 }
 
 void keyReleased() {
+  pressedKey = ' ';
   /* 変更箇所 */
-  if ((key == 'n' || keyCode == ENTER) && (windowHandler == FrameOpening || windowHandler == FrameHarvest)){
+  if ((keyCode == ENTER) && (windowHandler == FrameOpening || windowHandler == FrameResult)){
     windowHandler++;
     isFrameChanged = true;
   }
@@ -437,11 +497,9 @@ void keyReleased() {
 void loading(){
   image(ImageLoading, 0, 0, width, height);
   image(ImageGreenPepper, loadingPosition, height - ImageGreenPepper.height / 2, ImageGreenPepper.width / 2, ImageGreenPepper.height / 2);
-  image(ImageApple, loadingPosition + ImageGreenPepper.width * 2, height - ImageApple.height / 2, ImageApple.width / 2, ImageApple.height /2);
-  image(ImagePan, loadingPosition + ImageGreenPepper.width * 3, height - ImagePan.height / 2, ImagePan.width / 2, ImagePan.height /2);
-  image(ImagePot, loadingPosition + ImageGreenPepper.width * 4, height - ImagePot.height / 2, ImagePot.width / 2, ImagePot.height /2);
+  image(ImageApple, loadingPosition + ImageGreenPepper.width, height - ImageApple.height / 2, ImageApple.width / 2, ImageApple.height /2);
   loadingPosition += 5;
-  if(loadingPosition > ImageGreenPepper.width * 4) loadingPosition = -width;
+  if(loadingPosition > width * 2) loadingPosition = -width;
 }
 
 void mouseClicked() {
