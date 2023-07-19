@@ -10,7 +10,7 @@ String[] vegetableFiles = {"greenpepper", "apple", "eggplant", "caterpie"}; // �
 String[] bulletFiles = {"PAN", "POT", "KNIFE", "MICROWAVE"}; // 弾丸のファイル名
 char[] keys = {'a', 'b', 'c', 'd', 'e', 'f', 'g', 'h', 'i', 'j', 'k', 'l', 'm', 'n', 'o', 'p', 'q', 'r', 's', 't', 'u', 'v', 'w', 'x', 'y', 'z'};
 
-int fps = 60; // 60fps
+int fps = 30; // 60fps
 int frameCounter = 0; // 汎用的なフレームカウンタ
 
 // 辞書型の作成
@@ -255,19 +255,19 @@ class Bullet{
   void setParameter(String name){
     if(name.equals("PAN")){
       this.speed = 3;
-      this.selfPoint = 2;
+      this.selfPoint = 4;
     }
     else if(name.equals("POT")){
       this.speed = 5;
-      this.selfPoint = 3;
+      this.selfPoint = 6;
     }
     else if(name.equals("MICROWAVE")){
       this.speed = 2;
-      this.selfPoint = 1;
+      this.selfPoint = 2;
     }
     else if(name.equals("KNIFE")){
       this.speed = 10;
-      this.selfPoint = 5;
+      this.selfPoint = 10;
     }
   }
 
@@ -282,11 +282,11 @@ class Bullet{
       image(this.image, (float)this.x, (float)this.y);
       fill(0);
       textSize(50);
-      text(this.key, this.x + this.image.width / 2, this.y + this.image.height / 2);
+      text(str(this.key).toUpperCase(), this.x + this.image.width / 2 - 20, this.y + this.image.height / 2);
       fill(255);
     }
     if(this.key == pressedKey && this.x < this.image.width && !this.isCountPoint){
-      point += this.selfPoint;
+      point += this.selfPoint; 
       BGMget.play();
       this.isBulletExist = false;
       this.isCountPoint = true;
@@ -331,10 +331,11 @@ void draw() {
     }
     frameCounter++;
     image(ImageSubtitle, 0, 0, width, ImageSubtitle.height);
-    String message = myIngredient.toString() + "\n" + (TimeHarvest * fps - frameCounter) / fps; // myIngredientの内容を文字列に変換
+    String message = myIngredient.toString(); // myIngredientの内容を文字列に変換
     fill(0);
     textSize(20);
     text(message, (width - textWidth(message)) / 2, ImageSubtitle.height / 2);
+    text(((TimeHarvest * fps - frameCounter) / fps), width / 2, ImageSubtitle.height / 2 + 30);
     fill(255);
 
     // 画像処理 //
@@ -346,8 +347,7 @@ void draw() {
         markers[i].detect(camera);
         markers[i].drawBackground(camera);
         if(random(1) < vegetableGenerationProbability && !cards[i].isVegetableExsit) {
-          randomIndex = (int) random(0, n_kind_vegetables);
-          cards[i] = new Character(vegetableFiles[randomIndex]);
+          cards[i] = new Character(vegetableFiles[frameCounter % n_kind_vegetables]);
           cards[i].isVegetableExsit = true;
         }
         if (markers[i].isExist(0)) {
@@ -407,7 +407,7 @@ void draw() {
     }
     image(ImageCooking[currentImageIndex], 0, 0, width, height);
     fill(255);
-    text((TimeCooking * fps - frameCounter) / fps, width / 2, height / 2 + 20);
+    text((TimeCooking * fps - frameCounter) / fps, width / 2 - 15, height / 2 + 40);
     ellipse(60, 420, 60, 60);
     rect(0, 0, width, 60);
     fill(255, 0, 0);
@@ -416,8 +416,7 @@ void draw() {
 
     for (int i = 0; i < n_bullets; i++) {
       if (!bullets[i].isBulletExist && random(1) < bulletGenerationProbability) {
-        randomIndex = (int) random(0, n_kind_bullets);
-        bullets[i] = new Bullet(bulletFiles[randomIndex], width + 100);
+        bullets[i] = new Bullet(bulletFiles[frameCounter % n_kind_bullets], width + 100);
         bullets[i].isBulletExist = true;
       }
       bullets[i].move();
@@ -431,24 +430,25 @@ void draw() {
       BGMresult.loop();
       frameCounter = 0;
       // 総和を計算する
-      int sum = 0, total = 0;
+      int total = 0;
       for (int i = 0; i < n_kind_vegetables; i++) {
         int num = myIngredient.get(vegetableFiles[i]);
-        total += num;
         if (!vegetableFiles[i].equals("caterpie")) {
-          total -= num * 2;
+          total += num;
+        }else{
+          total -= num;
         }
       }
       int catapieValue = myIngredient.get("caterpie");
       print("sum: " + sum + "total: ", total + "point: " + point + "cooking: " + cookingClearPoint);
-      int hr = (int)((double)sum / total * 100);
+      int hr = total;
       int cr = (int)((double)point / cookingClearPoint * 100);
 
-      if(hr <= 50) harvestResult = 'E';
-      else if(hr <= 60) harvestResult = 'D';
-      else if(hr <= 70) harvestResult = 'C';
-      else if(hr <= 80) harvestResult = 'B';
-      else if(hr <= 90) harvestResult = 'A';
+      if(hr <= 0) harvestResult = 'E';
+      else if(hr <= 5) harvestResult = 'D';
+      else if(hr <= 10) harvestResult = 'C';
+      else if(hr <= 15) harvestResult = 'B';
+      else if(hr <= 20) harvestResult = 'A';
       else harvestResult = 'S';
 
       if(cr <= 50) cookingResult = 'E';
@@ -465,10 +465,11 @@ void draw() {
     text(harvestResult, 420, 280);
     text(cookingResult, 420, 370);
   }
-}
+  
+  else if(windowHandler == FrameExit){
+    exit();
+  }
 
-else if(windowHandler == FrameExit){
-  exit()
 }
 
 void keyPressed() {
