@@ -24,6 +24,8 @@ int windowHandler = 0; // ウィンドウチェンジ
 int currentImageIndex = 0; // 対応インデックス
 int elapsedCount = 0; // 
 
+int TimeHarvest = 30;
+
 int loadingPosition = 100;
 PImage[] ImageTitel; // 画面画像
 PImage ImageSubtitle; // サブタイトル
@@ -35,8 +37,10 @@ PImage[] ImageCooking;
 // 音源 //
 boolean isChangedMusic = true; // 音源変更時フラグ
 SoundFile BGMopening; // Opening
-SoundFile BGMinstruction; // Instruction
 SoundFile BGMharvest; // Harvest
+SoundFile BGMcooking; // Harvest
+SoundFile BGMloading; // Harvest
+SoundFile BGMresult; // Harvest
 SoundFile BGMget; // Get
 
 // 初期設定 //
@@ -72,8 +76,12 @@ void setup() {
 
   // 音源のインポート //
   BGMopening = new SoundFile(this, "sound/opening.wav");
-  BGMinstruction = new SoundFile(this, "sound/instruction.wav");
-  BGMharvest = new SoundFile(this, "sound/bgm.wav");
+  BGMharvest = new SoundFile(this, "sound/harvest.wav");
+  BGMcooking = new SoundFile(this, "sound/cooking.wav"); // Harvest
+  BGMloading = new SoundFile(this, "sound/loading.wav"); // Harvest
+  BGMresult = new SoundFile(this, "sound/result.wav"); // Harvest
+
+  // 効果音のインポート //
   BGMget = new SoundFile(this, "sound/get.wav");
 
   //キャラクターの作成 //
@@ -167,18 +175,33 @@ class Character {
     this.angle += this.rotate_value;
     this.height += this.updown_value;
   }
-}
+} /* キャラクタークラス終了 */
 
+
+/* 弾丸クラス */
 class Bullet{
-  String filename;
+  String name;
   int x, y;
+  char k; 
+  color c;
+  int speed;
 
-  Bullet(String filename, int x, int y){
+  Bullet(String name, int x, int y, int speed, char k, color c){
+    this.name = name;
     this.x = x;
     this.y = y;
+    this.speed = speed;
+    this.k = k;
+    this.c = c;
   }
 
+  void move(){
+    this.x += this.speed;
+  }
 
+  void update(){
+    print("");
+  }
 }
 
 /* メイン処理 */
@@ -188,15 +211,16 @@ void draw() {
     if(isChangedMusic){
       BGMopening.loop();
       isChangedMusic = false;
+      frameCounter = 0;
     }
 
     // 一定の間隔ごとに画像を切り替える
-    if (elapsedCount >= 50) {
+    if (frameCounter >= 50) {
       currentImageIndex = (currentImageIndex + 1) % ImageTitel.length;
-      elapsedCount = 0;
+      frameCounter = 0;
     }
-    elapsedCount += 1;
     image(ImageTitel[currentImageIndex], 0, 0, width, height);
+    frameCounter++;
   }
 
 
@@ -209,13 +233,13 @@ void draw() {
       isChangedMusic = false;
       frameCounter = 0;
     }
-    if(frameCounter > fps * 20){
+    if(frameCounter > fps * TimeHarvest){
       isChangedMusic = true;
       windowHandler++;
     }
     frameCounter++;
     image(ImageSubtitle, 0, height - ImageSubtitle.height, width, ImageSubtitle.height);
-    String message = myIngredient.toString(); // myIngredientの内容を文字列に変換
+    String message = myIngredient.toString() + "\n" + (TimeHarvest * fps - frameCounter) / fps; // myIngredientの内容を文字列に変換
     fill(0);textSize(20);
     text(message, (width - textWidth(message)) / 2, height - ImageSubtitle.height / 2);
     fill(255);
@@ -252,20 +276,32 @@ void draw() {
       }
     }
   }
+
+
   else if(windowHandler == 2){
     // 音源変更
     if (isChangedMusic){
       BGMharvest.stop();
+      BGMloading.loop();
       isChangedMusic = false;
       frameCounter = 0;
     }
     frameCounter++;
     if(frameCounter > fps * 5){
       windowHandler++;
+      isChangedMusic = true;
     }
     loading();
   }
+
+
   else if(windowHandler == 3){
+    if (isChangedMusic){
+      BGMloading.stop();
+      BGMcooking.loop();
+      isChangedMusic = false;
+      frameCounter = 0;
+    }
     // 一定の間隔ごとに画像を切り替える
     if (elapsedCount >= 50) {
       currentImageIndex = (currentImageIndex + 1) % ImageCooking.length;
@@ -274,6 +310,7 @@ void draw() {
     elapsedCount += 1;
     image(ImageCooking[currentImageIndex], 0, 0, width, height);
   }
+
 
   else if(windowHandler == 4){
     exit();
@@ -290,7 +327,16 @@ void keyReleased() {
 void loading(){
   image(ImageLoading, 0, 0, width, height);
   image(ImageGreenPepper, loadingPosition, height - ImageGreenPepper.height);
-  image(ImageApple, loadingPosition+300, height - ImageApple.height);
-  loadingPosition += 10;
-  if(loadingPosition > 1000) loadingPosition = -400;
+  image(ImageApple, loadingPosition + ImageGreenPepper.width * 2, height - ImageApple.height);
+  loadingPosition += 5;
+  if(loadingPosition > width * 2) loadingPosition = -width;
+}
+
+void mouseClicked() {
+  // クリックした位置の座標を取得
+  int x = mouseX;
+  int y = mouseY;
+  
+  // 取得した座標を表示
+  println("クリック位置の座標: (" + x + ", " + y + ")");
 }
