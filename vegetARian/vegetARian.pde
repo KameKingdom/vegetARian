@@ -8,6 +8,7 @@ Capture camera; // カメラ
 MultiMarker[] markers; // マーカー
 String[] vegetableFiles = {"greenpepper", "apple", "eggplant", "caterpie"}; // 材料のファイル名
 int fps = 60; // 60fps
+int frameCounter = 0; // 汎用的なフレームカウンタ
 
 // 辞書型の作成
 HashMap<String, Integer> myIngredient;
@@ -21,9 +22,15 @@ int n_marker = n_cards; // マーカーの数
 int index_status = 4; // ステータスカードのインデックス
 int windowHandler = 0; // ウィンドウチェンジ
 int currentImageIndex = 0; // 対応インデックス
-int elapsedCount = 0; // フレームカウンタ
+int elapsedCount = 0; // 
+
+int loadingPosition = 100;
 PImage[] ImageTitel; // 画面画像
 PImage ImageSubtitle; // サブタイトル
+PImage ImageLoading;
+PImage ImageGreenPepper;
+PImage ImageApple;
+PImage[] ImageCooking;
 
 // 音源 //
 boolean isChangedMusic = true; // 音源変更時フラグ
@@ -54,6 +61,14 @@ void setup() {
   ImageTitel[0] = loadImage("images/vegetARian1.png");
   ImageTitel[1] = loadImage("images/vegetARian2.png");
   ImageSubtitle = loadImage("images/subTitle.png");
+  ImageLoading = loadImage("images/nowLoading.png");
+  ImageGreenPepper = loadImage("images/greenpepper.png");
+  ImageApple = loadImage("images/apple.png");
+  ImageCooking = new PImage[4];
+  ImageCooking[0] = loadImage("images/cooking1.png");
+  ImageCooking[1] = loadImage("images/cooking2.png");
+  ImageCooking[2] = loadImage("images/cooking1.png");
+  ImageCooking[3] = loadImage("images/cooking3.png");
 
   // 音源のインポート //
   BGMopening = new SoundFile(this, "sound/opening.wav");
@@ -105,6 +120,7 @@ class Character {
     if(filename.equals("greenpepper.obj")){ this.scale = 0.2; this.rotate_value = 0.05;}
     else if(filename.equals("apple.obj")){ this.scale = 150; this.rotate_value = 0.05;}
     else if(filename.equals("caterpie.obj")){ this.scale = 30; this.rotate_value = 0.05;}
+    else if(filename.equals("eggplant.obj")){ this.scale = 20; this.rotate_value = 0.05; this.height = -10;}
   }
 
   void update(){
@@ -153,6 +169,18 @@ class Character {
   }
 }
 
+class Bullet{
+  String filename;
+  int x, y;
+
+  Bullet(String filename, int x, int y){
+    this.x = x;
+    this.y = y;
+  }
+
+
+}
+
 /* メイン処理 */
 void draw() {
   if(windowHandler == 0){
@@ -179,7 +207,13 @@ void draw() {
       BGMopening.stop();
       BGMharvest.loop();
       isChangedMusic = false;
+      frameCounter = 0;
     }
+    if(frameCounter > fps * 20){
+      isChangedMusic = true;
+      windowHandler++;
+    }
+    frameCounter++;
     image(ImageSubtitle, 0, height - ImageSubtitle.height, width, ImageSubtitle.height);
     String message = myIngredient.toString(); // myIngredientの内容を文字列に変換
     fill(0);textSize(20);
@@ -218,11 +252,45 @@ void draw() {
       }
     }
   }
+  else if(windowHandler == 2){
+    // 音源変更
+    if (isChangedMusic){
+      BGMharvest.stop();
+      isChangedMusic = false;
+      frameCounter = 0;
+    }
+    frameCounter++;
+    if(frameCounter > fps * 5){
+      windowHandler++;
+    }
+    loading();
+  }
+  else if(windowHandler == 3){
+    // 一定の間隔ごとに画像を切り替える
+    if (elapsedCount >= 50) {
+      currentImageIndex = (currentImageIndex + 1) % ImageCooking.length;
+      elapsedCount = 0;
+    }
+    elapsedCount += 1;
+    image(ImageCooking[currentImageIndex], 0, 0, width, height);
+  }
+
+  else if(windowHandler == 4){
+    exit();
+  }
 }
 
 void keyReleased() {
   if (key == 'n' || keyCode == ENTER){
-    windowHandler += 1;
+    windowHandler++;
     isChangedMusic = true;
   }
+}
+
+void loading(){
+  image(ImageLoading, 0, 0, width, height);
+  image(ImageGreenPepper, loadingPosition, height - ImageGreenPepper.height);
+  image(ImageApple, loadingPosition+300, height - ImageApple.height);
+  loadingPosition += 10;
+  if(loadingPosition > 1000) loadingPosition = -400;
 }
