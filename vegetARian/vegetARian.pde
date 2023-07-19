@@ -41,6 +41,7 @@ int FrameCooking = 3;
 int FrameResult = 4;
 
 // クッキングキーフラグ //
+boolean isAlreadyPressed = false;
 boolean upKeyPressed = false;
 boolean downKeyPressed = false;
 int point = 0;
@@ -48,7 +49,7 @@ int cookingClearPoint = 100;
 
 int TimeHarvest = 30;
 
-int loadingPosition = 100;
+int loadingPosition = 0;
 PImage[] ImageTitel; // 画面画像
 PImage ImageSubtitle; // サブタイトル
 PImage ImageLoading;
@@ -247,16 +248,18 @@ class Bullet{
   }
 
   void update(){
-    if(this.isBulletExist == true){
+    if(this.isBulletExist){
       image(this.image, (float)this.x, (float)this.y);
     }
     if(this.name.equals("UP") && this.x < 100 && upKeyPressed == true){
       point++;
       this.isBulletExist = false;
+      upKeyPressed = false;
     }
     else if(this.name.equals("DOWN") && this.x < 100 && downKeyPressed == true){
       point++;
       this.isBulletExist = false;
+      downKeyPressed = false;
     }
     if(this.x < -this.image.width){
       this.isBulletExist = false;
@@ -397,29 +400,41 @@ void draw() {
   }
 }
 
+
+void keyPressed(){
+  if(windowHandler == FrameCooking){
+    if(key == CODED){
+      if(keyCode == UP){
+        upKeyPressed = true;
+      } else if(keyCode == DOWN){
+        downKeyPressed = true;
+      }
+    }
+  }
+}
+
 void keyReleased() {
   /* 変更箇所 */
   if ((key == 'n' || keyCode == ENTER) && (windowHandler == FrameOpening || windowHandler == FrameHarvest)){
     windowHandler++;
     isFrameChanged = true;
   }
-  if (keyCode == UP) {
-    upKeyPressed = true;
-  }
-  else if (keyCode == DOWN) {
-    downKeyPressed = true;
-  }
-  else{
-    upKeyPressed = false;
-    downKeyPressed = false;
+  if(windowHandler == FrameCooking){
+    if(key == CODED){
+      if(keyCode == UP){
+        upKeyPressed = false;
+      } else if(keyCode == DOWN){
+        downKeyPressed = false;
+      }
+    }
   }
 }
 
 void loading(){
   image(ImageLoading, 0, 0, width, height);
-  image(ImageGreenPepper, loadingPosition, height - ImageGreenPepper.height);
-  image(ImageApple, loadingPosition + ImageGreenPepper.width * 2, height - ImageApple.height);
-  loadingPosition += 5;
+  image(ImageGreenPepper, loadingPosition, height - ImageGreenPepper.height, ImageGreenPepper.width / 2, ImageGreenPepper.height / 2);
+  image(ImageApple, loadingPosition + ImageGreenPepper.width * 2, height - ImageApple.height, ImageApple.width / 2, ImageApple.height /2);
+  loadingPosition += 10;
   if(loadingPosition > width * 2) loadingPosition = -width;
 }
 
