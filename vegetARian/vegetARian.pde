@@ -440,7 +440,7 @@ void draw() {
         }
       }
       int catapieValue = myIngredient.get("caterpie");
-      print("sum: " + sum + "total: ", total + "point: " + point + "cooking: " + cookingClearPoint);
+      print("total: ", total + "point: " + point + "cooking: " + cookingClearPoint);
       int hr = total;
       int cr = (int)((double)point / cookingClearPoint * 100);
 
