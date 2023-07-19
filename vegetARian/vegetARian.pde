@@ -42,6 +42,7 @@ int FrameHarvest = 1;
 int FrameLoading = 2;
 int FrameCooking = 3;
 int FrameResult = 4;
+int FrameExit = 5;
 
 int randomIndex = 0;
 
@@ -54,7 +55,7 @@ int cookingClearPoint = 100;
 char pressedKey = ' ';
 
 int TimeHarvest = 30;
-int TimeCooking = 20;
+int TimeCooking = 30;
 
 char harvestResult = ' ';
 char cookingResult = ' ';
@@ -435,7 +436,7 @@ void draw() {
         int num = myIngredient.get(vegetableFiles[i]);
         total += num;
         if (!vegetableFiles[i].equals("caterpie")) {
-          sum += num;
+          total -= num * 2;
         }
       }
       int catapieValue = myIngredient.get("caterpie");
@@ -464,6 +465,10 @@ void draw() {
     text(harvestResult, 420, 280);
     text(cookingResult, 420, 370);
   }
+}
+
+else if(windowHandler == FrameExit){
+  exit()
 }
 
 void keyPressed() {
