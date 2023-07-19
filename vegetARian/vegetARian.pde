@@ -55,6 +55,8 @@ PImage ImageSubtitle; // サブタイトル
 PImage ImageLoading;
 PImage ImageGreenPepper;
 PImage ImageApple;
+PImage ImagePan;
+PImage ImagePot;
 PImage[] ImageCooking;
 
 // 音源 //
@@ -91,6 +93,8 @@ void setup() {
   ImageLoading = loadImage("images/nowLoading.png");
   ImageGreenPepper = loadImage("images/greenpepper.png");
   ImageApple = loadImage("images/apple.png");
+  ImagePan = loadImage("images/UP.png");
+  ImagePot = loadImage("images/DOWN.png");
   ImageCooking = new PImage[4];
   ImageCooking[0] = loadImage("images/cooking1.png");
   ImageCooking[1] = loadImage("images/cooking2.png");
@@ -432,10 +436,12 @@ void keyReleased() {
 
 void loading(){
   image(ImageLoading, 0, 0, width, height);
-  image(ImageGreenPepper, loadingPosition, height - ImageGreenPepper.height, ImageGreenPepper.width / 2, ImageGreenPepper.height / 2);
-  image(ImageApple, loadingPosition + ImageGreenPepper.width * 2, height - ImageApple.height, ImageApple.width / 2, ImageApple.height /2);
-  loadingPosition += 10;
-  if(loadingPosition > width * 2) loadingPosition = -width;
+  image(ImageGreenPepper, loadingPosition, height - ImageGreenPepper.height / 2, ImageGreenPepper.width / 2, ImageGreenPepper.height / 2);
+  image(ImageApple, loadingPosition + ImageGreenPepper.width * 2, height - ImageApple.height / 2, ImageApple.width / 2, ImageApple.height /2);
+  image(ImagePan, loadingPosition + ImageGreenPepper.width * 3, height - ImagePan.height / 2, ImagePan.width / 2, ImagePan.height /2);
+  image(ImagePot, loadingPosition + ImageGreenPepper.width * 4, height - ImagePot.height / 2, ImagePot.width / 2, ImagePot.height /2);
+  loadingPosition += 5;
+  if(loadingPosition > ImageGreenPepper.width * 4) loadingPosition = -width;
 }
 
 void mouseClicked() {
