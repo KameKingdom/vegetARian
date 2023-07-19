@@ -7,6 +7,7 @@ import processing.sound.*;
 Capture camera; // カメラ
 MultiMarker[] markers; // マーカー
 String[] vegetableFiles = {"greenpepper", "apple", "eggplant", "caterpie"}; // 材料のファイル名
+String[] bulletFiles = {"UP", "DOWN"}; // 弾丸のファイル名
 int fps = 60; // 60fps
 int frameCounter = 0; // 汎用的なフレームカウンタ
 
@@ -18,11 +19,32 @@ int n_vegetable = 3; // 野菜カードの数
 int n_status = 0; // ステータスカードの数
 int n_cards = n_vegetable + n_status; // カードの総数
 int n_marker = n_cards; // マーカーの数
+int n_kind_vegetables = vegetableFiles.length;
 
 int index_status = 4; // ステータスカードのインデックス
 int windowHandler = 0; // ウィンドウチェンジ
 int currentImageIndex = 0; // 対応インデックス
 int elapsedCount = 0; // 
+
+Bullet[] bullets; // 弾丸
+int n_bullets = 5;
+int n_kind_bullets = bulletFiles.length;
+
+float vegetableGenerationProbability = 0.05;
+float bulletGenerationProbability = 0.1;
+
+// フレームインデックス //
+int FrameOpening = 0;
+int FrameHarvest = 1;
+int FrameLoading = 2;
+int FrameCooking = 3;
+int FrameResult = 4;
+
+// クッキングキーフラグ //
+boolean upKeyPressed = false;
+boolean downKeyPressed = false;
+int point = 0;
+int cookingClearPoint = 100;
 
 int TimeHarvest = 30;
 
@@ -35,7 +57,7 @@ PImage ImageApple;
 PImage[] ImageCooking;
 
 // 音源 //
-boolean isChangedMusic = true; // 音源変更時フラグ
+boolean isFrameChanged = true; // 音源変更時フラグ
 SoundFile BGMopening; // Opening
 SoundFile BGMharvest; // Harvest
 SoundFile BGMcooking; // Harvest
@@ -87,7 +109,7 @@ void setup() {
   //キャラクターの作成 //
   cards = new Character[n_cards];
   for (int i = 0; i < n_cards; i++){
-    cards[i] = new Character("greenpepper.obj");
+    cards[i] = new Character(vegetableFiles[i % n_kind_vegetables]);
   } 
 
   // 辞書型の作成
@@ -95,6 +117,12 @@ void setup() {
   for(int i = 0; i < vegetableFiles.length; i++){
     myIngredient.put(vegetableFiles[i], 0);
   }
+
+  //弾丸の作成 //
+  bullets = new Bullet[n_bullets];
+  for (int i = 0; i < n_bullets; i++){
+    bullets[i] = new Bullet(bulletFiles[i % n_kind_bullets], width + 100);
+  } 
 }
 
 
@@ -124,13 +152,22 @@ class Character {
     setParameter(filename);
   }
   
-  void setParameter(String filename){
-    if(filename.equals("greenpepper.obj")){ this.scale = 0.2; this.rotate_value = 0.05;}
-    else if(filename.equals("apple.obj")){ this.scale = 150; this.rotate_value = 0.05;}
-    else if(filename.equals("caterpie.obj")){ this.scale = 30; this.rotate_value = 0.05;}
-    else if(filename.equals("eggplant.obj")){ this.scale = 20; this.rotate_value = 0.05; this.height = -10;}
+  void setParameter(String filename) {
+    if (filename.equals("greenpepper.obj")) {
+      this.scale = 0.2;
+      this.rotate_value = 0.05;
+    } else if (filename.equals("apple.obj")) {
+      this.scale = 150;
+      this.rotate_value = 0.05;
+    } else if (filename.equals("caterpie.obj")) {
+      this.scale = 30;
+      this.rotate_value = 0.05;
+    } else if (filename.equals("eggplant.obj")) {
+      this.scale = 20;
+      this.rotate_value = 0.05;
+      this.height = -10;
+    }
   }
-
   void update(){
     /* キャラクター生成 */
     if(!this.isVegetableExsit && random(1) <= 0.01){
@@ -180,37 +217,60 @@ class Character {
 
 /* 弾丸クラス */
 class Bullet{
+  PImage image;
+  String filename;
   String name;
-  int x, y;
-  char k; 
-  color c;
+  int x;
+  int y;
   int speed;
+  boolean isPressed = false;
+  boolean isBulletExist = false;
 
-  Bullet(String name, int x, int y, int speed, char k, color c){
+  Bullet(String name, int x){
     this.name = name;
+    this.filename = "images/" + name + ".png";
     this.x = x;
-    this.y = y;
-    this.speed = speed;
-    this.k = k;
-    this.c = c;
+    this.image = loadImage(this.filename);
+    this.y = height - this.image.height;
+    setParameter(this.name);
+  }
+
+  void setParameter(String name){
+    if(name.equals("UP")){ this.speed = 3;}
+    else if(name.equals("DOWN")){ this.speed = 5;}
   }
 
   void move(){
-    this.x += this.speed;
+    if(this.isBulletExist){
+      this.x -= this.speed;
+    }
   }
 
   void update(){
-    print("");
+    if(this.isBulletExist == true){
+      image(this.image, (float)this.x, (float)this.y);
+    }
+    if(this.name.equals("UP") && this.x < 100 && upKeyPressed == true){
+      point++;
+      this.isBulletExist = false;
+    }
+    else if(this.name.equals("DOWN") && this.x < 100 && downKeyPressed == true){
+      point++;
+      this.isBulletExist = false;
+    }
+    if(this.x < -this.image.width){
+      this.isBulletExist = false;
+    }
   }
 }
 
 /* メイン処理 */
 void draw() {
-  if(windowHandler == 0){
+  if(windowHandler == FrameOpening){
     // 音源変更
-    if(isChangedMusic){
+    if(isFrameChanged){
       BGMopening.loop();
-      isChangedMusic = false;
+      isFrameChanged = false;
       frameCounter = 0;
     }
 
@@ -223,24 +283,24 @@ void draw() {
     frameCounter++;
   }
 
-
   /* 収穫ゲーム */
-  else if(windowHandler == 1){
+  else if(windowHandler == FrameHarvest){
     // 音源変更
-    if (isChangedMusic){
+    if (isFrameChanged){
       BGMopening.stop();
       BGMharvest.loop();
-      isChangedMusic = false;
+      isFrameChanged = false;
       frameCounter = 0;
     }
     if(frameCounter > fps * TimeHarvest){
-      isChangedMusic = true;
+      isFrameChanged = true;
       windowHandler++;
     }
     frameCounter++;
     image(ImageSubtitle, 0, height - ImageSubtitle.height, width, ImageSubtitle.height);
     String message = myIngredient.toString() + "\n" + (TimeHarvest * fps - frameCounter) / fps; // myIngredientの内容を文字列に変換
-    fill(0);textSize(20);
+    fill(0);
+    textSize(20);
     text(message, (width - textWidth(message)) / 2, height - ImageSubtitle.height / 2);
     fill(255);
 
@@ -252,9 +312,10 @@ void draw() {
       for (int i = 0; i < n_marker; i++) {
         markers[i].detect(camera);
         markers[i].drawBackground(camera);
-        if (random(1) < 0.05 && !cards[i].isVegetableExsit) {
-          int randomIndex = (int) random(0, n_cards);
+        if(random(1) < vegetableGenerationProbability && !cards[i].isVegetableExsit) {
+          int randomIndex = (int) random(0, n_kind_vegetables);
           cards[i] = new Character(vegetableFiles[randomIndex]);
+          cards[i].isVegetableExsit = true;
         }
         if (markers[i].isExist(0)) {
           markers[i].beginTransform(0); // マーカー中心を原点に設定
@@ -278,49 +339,79 @@ void draw() {
   }
 
 
-  else if(windowHandler == 2){
+  else if(windowHandler == FrameLoading){
     // 音源変更
-    if (isChangedMusic){
+    if (isFrameChanged){
       BGMharvest.stop();
       BGMloading.loop();
-      isChangedMusic = false;
+      isFrameChanged = false;
       frameCounter = 0;
     }
     frameCounter++;
     if(frameCounter > fps * 5){
       windowHandler++;
-      isChangedMusic = true;
+      isFrameChanged = true;
     }
     loading();
   }
 
 
-  else if(windowHandler == 3){
-    if (isChangedMusic){
+  else if(windowHandler == FrameCooking){
+    if (isFrameChanged){
       BGMloading.stop();
       BGMcooking.loop();
-      isChangedMusic = false;
+      isFrameChanged = false;
       frameCounter = 0;
     }
-    // 一定の間隔ごとに画像を切り替える
+    // 描画 //
     if (elapsedCount >= 50) {
       currentImageIndex = (currentImageIndex + 1) % ImageCooking.length;
       elapsedCount = 0;
     }
-    elapsedCount += 1;
+    if (point >= cookingClearPoint){
+      windowHandler++;
+      isFrameChanged = true;
+    }
     image(ImageCooking[currentImageIndex], 0, 0, width, height);
+    fill(255);
+    ellipse(60, 420, 60, 60);
+    rect(0, 0, width, 60);
+    fill(255, 0, 0);
+    rect(0, 0, width * point / 100, 60);
+    elapsedCount++;
+
+    for (int i = 0; i < n_bullets; i++) {
+      if (!bullets[i].isBulletExist && random(1) < bulletGenerationProbability) {
+        int randomIndex = (int) random(0, n_kind_bullets);
+        bullets[i] = new Bullet(bulletFiles[randomIndex], width + 100);
+        bullets[i].isBulletExist = true;
+      }
+      bullets[i].move();
+      bullets[i].update();
+    }
   }
 
 
-  else if(windowHandler == 4){
+  else if(windowHandler == FrameResult){
     exit();
   }
 }
 
 void keyReleased() {
-  if (key == 'n' || keyCode == ENTER){
+  /* 変更箇所 */
+  if ((key == 'n' || keyCode == ENTER) && (windowHandler == FrameOpening || windowHandler == FrameHarvest)){
     windowHandler++;
-    isChangedMusic = true;
+    isFrameChanged = true;
+  }
+  if (keyCode == UP) {
+    upKeyPressed = true;
+  }
+  else if (keyCode == DOWN) {
+    downKeyPressed = true;
+  }
+  else{
+    upKeyPressed = false;
+    downKeyPressed = false;
   }
 }
 
