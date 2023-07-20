@@ -9,9 +9,9 @@ MultiMarker[] markers; // マーカー
 String[] vegetableFiles = {"greenpepper", "apple", "eggplant", "caterpie"}; // 材料のファイル名
 String[] recipeFiles = {"greenpepper", "apple", "eggplant"}; // レシピのファイル名
 String[] bulletFiles = {"PAN", "POT", "KNIFE", "MICROWAVE"}; // 弾丸のファイル名
-char[] keys = {'a', 'b', 'c', 'd', 'e', 'f', 'g', 'h', 'i', 'j', 'k', 'l', 'm', 'n', 'o', 'p', 'q', 'r', 's', 't', 'u', 'v', 'w', 'x', 'y', 'z'};
+char[] keys = {'a', 'b', 'c', 'd', 'e', 'f', 'g', 'h', 'i', 'j', 'k', 'l', 'm', 'n', 'o', 'p', 'q', 'r', 's', 't', 'u', 'v', 'w', 'x', 'y', 'z'}; // アルファベット
 
-int fps = 30; // 60fps
+int fps = 30; // 30fps
 int frameCounter = 0; // 汎用的なフレームカウンタ
 
 // 辞書型の作成
