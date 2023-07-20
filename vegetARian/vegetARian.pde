@@ -1,12 +1,13 @@
 // ライブラリのインポート
 import processing.video.*;
 import jp.nyatla.nyar4psg.*;
-import processing.sound.*; 
+import processing.sound.*;
 
 // 変数の宣言 //
 Capture camera; // カメラ
 MultiMarker[] markers; // マーカー
 String[] vegetableFiles = {"greenpepper", "apple", "eggplant", "caterpie"}; // 材料のファイル名
+String[] recipeFiles = {"greenpepper", "apple", "eggplant"}; // レシピのファイル名
 String[] bulletFiles = {"PAN", "POT", "KNIFE", "MICROWAVE"}; // 弾丸のファイル名
 char[] keys = {'a', 'b', 'c', 'd', 'e', 'f', 'g', 'h', 'i', 'j', 'k', 'l', 'm', 'n', 'o', 'p', 'q', 'r', 's', 't', 'u', 'v', 'w', 'x', 'y', 'z'};
 
@@ -22,6 +23,13 @@ int n_status = 0; // ステータスカードの数
 int n_cards = n_vegetable + n_status; // カードの総数
 int n_marker = n_cards; // マーカーの数
 int n_kind_vegetables = vegetableFiles.length;
+
+String[] recipe; // レシピ
+int n_recipe = recipeFiles.length; // レシピ
+int n_max_recipe = 10; // レシピ
+int correctRecipeCount = 0;
+int incorrectRecipeCount = 0;
+int harvestScore = 0;
 
 int index_status = 4; // ステータスカードのインデックス
 int windowHandler = 0; // ウィンドウチェンジ
@@ -43,6 +51,8 @@ int FrameLoading = 2;
 int FrameCooking = 3;
 int FrameResult = 4;
 int FrameExit = 5;
+int FrameInstruction1 = 6;
+int FrameInstruction2 = 7;
 
 int randomIndex = 0;
 
@@ -62,6 +72,8 @@ char cookingResult = ' ';
 
 int loadingPosition = 0;
 PImage[] ImageTitel; // 画面画像
+PImage[] ImageRecipe;
+PImage[] ImageInstruction;
 PImage ImageSubtitle; // サブタイトル
 PImage ImageLoading;
 PImage ImageGreenPepper;
@@ -77,6 +89,7 @@ SoundFile BGMcooking; // Harvest
 SoundFile BGMloading; // Harvest
 SoundFile BGMresult; // Harvest
 SoundFile BGMget; // Get
+SoundFile BGMwrong; // Wrong
 
 // 初期設定 //
 void setup() {
@@ -97,17 +110,15 @@ void setup() {
 
   // 画像のインポート //
   ImageTitel = new PImage[2];
-  ImageTitel[0] = loadImage("images/vegetARian1.png");
-  ImageTitel[1] = loadImage("images/vegetARian2.png");
+  for(int i = 0; i < 2; i++){ ImageTitel[i] = loadImage("images/vegetARian" + i + ".png"); }
   ImageSubtitle = loadImage("images/subTitle.png");
   ImageLoading = loadImage("images/nowLoading.png");
-  ImageGreenPepper = loadImage("images/greenpepper.png");
-  ImageApple = loadImage("images/apple.png");
+  ImageInstruction = new PImage[2];
+  for(int i = 0; i < 2; i++){ ImageInstruction[i] = loadImage("images/inst" + i + ".png"); }
+  ImageRecipe = new PImage[n_max_recipe];
+  for(int i = 0; i < n_max_recipe; i++){ ImageRecipe[i] = loadImage("images/" + recipeFiles[i % n_recipe] + ".png");}
   ImageCooking = new PImage[4];
-  ImageCooking[0] = loadImage("images/cooking1.png");
-  ImageCooking[1] = loadImage("images/cooking2.png");
-  ImageCooking[2] = loadImage("images/cooking1.png");
-  ImageCooking[3] = loadImage("images/cooking3.png");
+  for(int i = 0; i < 4; i++){ ImageCooking[i] = loadImage("images/cooking" + i + ".png"); }
   ImageResult = loadImage("images/result.png");
 
   // 音源のインポート //
@@ -119,11 +130,18 @@ void setup() {
 
   // 効果音のインポート //
   BGMget = new SoundFile(this, "sound/get.wav");
+  BGMwrong = new SoundFile(this, "sound/wrong.mp3");
 
-  //キャラクターの作成 //
+  // 材料のインスタンス作成 //
   cards = new Character[n_cards];
   for (int i = 0; i < n_cards; i++){
     cards[i] = new Character(vegetableFiles[i % n_kind_vegetables]);
+  } 
+
+  // レシピの作成 //
+  recipe = new String[n_max_recipe];
+  for (int i = 0; i < n_max_recipe; i++){
+    recipe[i] = recipeFiles[i % n_recipe];
   } 
 
   // 辞書型の作成
@@ -132,11 +150,11 @@ void setup() {
     myIngredient.put(vegetableFiles[i], 0);
   }
 
-  //弾丸の作成 //
+  //弾丸のインスタンス作成 //
   bullets = new Bullet[n_bullets];
   for (int i = 0; i < n_bullets; i++){
     bullets[i] = new Bullet(bulletFiles[i % n_kind_bullets], width + 100);
-  } 
+  }
 }
 
 // キャラクターのクラス //
@@ -151,7 +169,6 @@ class Character {
   int height = 0; // 高度
 
   boolean isVegetableExsit = false; // 自分が存在したフラグ
-  boolean isHidden = false; // 隠されたフラグ
   boolean startDetection = false; // 検出を可能にするか
   
   //動きに関するパラメータ //
@@ -181,6 +198,7 @@ class Character {
       this.height = -10;
     }
   }
+
   void update(){
     /* キャラクター生成 */
     if(!this.isVegetableExsit && random(1) <= 0.01){
@@ -192,22 +210,27 @@ class Character {
     /* 自分が存在する時 */
     if(this.isVegetableExsit){
       this.totalFrame += 1;
-      if(this.totalFrame == 10){
-        if (this.detectedFrame > 8) this.startDetection = true;
+      if(this.totalFrame == 20){
+        if (this.detectedFrame > 18){
+          this.startDetection = true;
+        }
         else{
+          this.startDetection = false;
           this.isVegetableExsit = false;
           this.totalFrame = 0;
           this.detectedFrame = 0;
         }
       }
       if(this.startDetection){
-        if(this.totalFrame - this.detectedFrame > 10){
-          isHidden = true;
-          BGMget.play();
+        if(this.totalFrame - this.detectedFrame > 5){
+          if(this.name == recipe[correctRecipeCount]){ // 隠されたものがあっていた
+            BGMget.play();
+            correctRecipeCount++;
+          }else{
+            BGMwrong.play();
+            incorrectRecipeCount++;
+          }
           this.isVegetableExsit = false;
-          int count = myIngredient.get(this.name);
-          count ++;
-          myIngredient.put(this.name, count);
         }
       }
       /* 存在時間終了 */
@@ -299,43 +322,54 @@ class Bullet{
 
 /* メイン処理 */
 void draw() {
+  /* Opening */
   if(windowHandler == FrameOpening){
     // 音源変更
     if(isFrameChanged){
+      stopBGM();
       BGMopening.loop();
       isFrameChanged = false;
       frameCounter = 0;
     }
-
     // 一定の間隔ごとに画像を切り替える
     if (frameCounter >= 50) {
-      currentImageIndex = (currentImageIndex + 1) % ImageTitel.length;
+      currentImageIndex = (currentImageIndex + 1) % 2;
       frameCounter = 0;
     }
     image(ImageTitel[currentImageIndex], 0, 0, width, height);
     frameCounter++;
   }
 
+  else if(windowHandler == FrameInstruction1){
+    if (isFrameChanged){
+      stopBGM();
+      BGMloading.loop();
+      isFrameChanged = false;
+    }
+    image(ImageInstruction[0], 0, 0, width, height);
+  }
+
   /* 収穫ゲーム */
   else if(windowHandler == FrameHarvest){
     // 音源変更
     if (isFrameChanged){
-      BGMopening.stop();
+      stopBGM();
       BGMharvest.loop();
       isFrameChanged = false;
       frameCounter = 0;
     }
-    if(frameCounter > fps * TimeHarvest){
-      isFrameChanged = true;
-      windowHandler++;
-    }
     frameCounter++;
-    image(ImageSubtitle, 0, 0, width, ImageSubtitle.height);
-    String message = myIngredient.toString(); // myIngredientの内容を文字列に変換
+    if(frameCounter > fps * TimeHarvest || correctRecipeCount >= n_max_recipe){
+      isFrameChanged = true;
+      windowHandler = FrameInstruction2;
+    }
+    harvestScore = (correctRecipeCount - incorrectRecipeCount) * 100;
+    image(ImageSubtitle, 0, 0, width, ImageSubtitle.height); // Subtitle
+    image(ImageRecipe[correctRecipeCount], width - ImageRecipe[correctRecipeCount].width - 10, 10, ImageRecipe[correctRecipeCount].width / 1.2, ImageRecipe[correctRecipeCount].height / 1.2);
     fill(0);
-    textSize(20);
-    text(message, (width - textWidth(message)) / 2, ImageSubtitle.height / 2);
-    text(((TimeHarvest * fps - frameCounter) / fps), width / 2, ImageSubtitle.height / 2 + 30);
+    textSize(40);
+    text(harvestScore, 120, ImageSubtitle.height / 2 - 5);
+    text(((TimeHarvest * fps - frameCounter) / fps), 120, ImageSubtitle.height / 2 + 40);
     fill(255);
 
     // 画像処理 //
@@ -353,7 +387,7 @@ void draw() {
         if (markers[i].isExist(0)) {
           markers[i].beginTransform(0); // マーカー中心を原点に設定
           cards[i].detectedFrame += 1;
-          if(cards[i].startDetection == true){
+          if(cards[i].startDetection){
             cards[i].move();
             pushMatrix();
             translate(0, 0, cards[i].height);
@@ -371,26 +405,19 @@ void draw() {
     }
   }
 
-  else if(windowHandler == FrameLoading){
-    // 音源変更
+  else if(windowHandler == FrameInstruction2){
     if (isFrameChanged){
-      BGMharvest.stop();
+      stopBGM();
       BGMloading.loop();
       isFrameChanged = false;
-      frameCounter = 0;
     }
-    frameCounter++;
-    if(frameCounter > fps * 5){
-      windowHandler++;
-      isFrameChanged = true;
-    }
-    loading();
+    image(ImageInstruction[1], 0, 0, width, height);
   }
 
 
   else if(windowHandler == FrameCooking){
     if (isFrameChanged){
-      BGMloading.stop();
+      stopBGM();
       BGMcooking.loop();
       isFrameChanged = false;
       frameCounter = 0;
@@ -398,7 +425,7 @@ void draw() {
     frameCounter++;
     // 描画 //
     if (elapsedCount >= 50) {
-      currentImageIndex = (currentImageIndex + 1) % ImageCooking.length;
+      currentImageIndex = (currentImageIndex + 1) % 4;
       elapsedCount = 0;
     }
     if (frameCounter > TimeCooking * fps){
@@ -426,29 +453,17 @@ void draw() {
 
   else if(windowHandler == FrameResult){
     if (isFrameChanged){
-      BGMcooking.stop();
+      stopBGM();
       BGMresult.loop();
       frameCounter = 0;
-      // 総和を計算する
-      int total = 0;
-      for (int i = 0; i < n_kind_vegetables; i++) {
-        int num = myIngredient.get(vegetableFiles[i]);
-        if (!vegetableFiles[i].equals("caterpie")) {
-          total += num;
-        }else{
-          total -= num;
-        }
-      }
-      int catapieValue = myIngredient.get("caterpie");
-      print("total: ", total + "point: " + point + "cooking: " + cookingClearPoint);
-      int hr = total;
+      int hr = (int)((double)(correctRecipeCount - incorrectRecipeCount) / n_max_recipe * 100);
       int cr = (int)((double)point / cookingClearPoint * 100);
 
-      if(hr <= 0) harvestResult = 'E';
-      else if(hr <= 5) harvestResult = 'D';
-      else if(hr <= 10) harvestResult = 'C';
-      else if(hr <= 15) harvestResult = 'B';
-      else if(hr <= 20) harvestResult = 'A';
+      if(hr <= 10) harvestResult = 'E';
+      else if(hr <= 30) harvestResult = 'D';
+      else if(hr <= 50) harvestResult = 'C';
+      else if(hr <= 70) harvestResult = 'B';
+      else if(hr <= 90) harvestResult = 'A';
       else harvestResult = 'S';
 
       if(cr <= 50) cookingResult = 'E';
@@ -467,6 +482,7 @@ void draw() {
   }
   
   else if(windowHandler == FrameExit){
+    stopBGM();
     exit();
   }
 
@@ -482,11 +498,28 @@ void keyPressed() {
   }
 }
 
+void stopBGM(){
+  BGMcooking.stop();
+  BGMharvest.stop();
+  BGMloading.stop();
+  BGMopening.stop();
+  BGMresult.stop();
+}
+
 void keyReleased() {
   pressedKey = ' ';
-  /* 変更箇所 */
-  if ((keyCode == ENTER) && (windowHandler == FrameOpening || windowHandler == FrameResult)){
-    windowHandler++;
+  if ((keyCode == ENTER)){
+    if(windowHandler == FrameHarvest){
+      windowHandler = FrameInstruction1;
+    }else if(windowHandler == FrameInstruction1){
+      windowHandler = FrameHarvest;
+    }else if(windowHandler == FrameInstruction2){
+      windowHandler = FrameCooking;
+    }else if(windowHandler == FrameResult){
+      windowHandler = FrameExit;
+    }else if(windowHandler == FrameOpening){
+      windowHandler = FrameInstruction1;
+    }
     isFrameChanged = true;
   }
   if(windowHandler == FrameCooking){
@@ -502,8 +535,9 @@ void keyReleased() {
 
 void loading(){
   image(ImageLoading, 0, 0, width, height);
-  image(ImageGreenPepper, loadingPosition, height - ImageGreenPepper.height / 2, ImageGreenPepper.width / 2, ImageGreenPepper.height / 2);
-  image(ImageApple, loadingPosition + ImageGreenPepper.width, height - ImageApple.height / 2, ImageApple.width / 2, ImageApple.height /2);
+  for(int i = 0; i < n_vegetable; i++){
+    image(ImageRecipe[i], loadingPosition + ImageRecipe[i].width * (i + 1), height - ImageRecipe[i].height, ImageRecipe[i].width / 2, ImageRecipe[i].height / 2);
+  }
   loadingPosition += 5;
   if(loadingPosition > width * 2) loadingPosition = -width;
 }
